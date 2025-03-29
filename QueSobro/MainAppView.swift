@@ -1,20 +1,13 @@
-//
-//  MainAppView.swift
-//  QueSobro
-//
-//  Created by Fernando Martínez on 29/03/25.
-//
-
-import Foundation
 import SwiftUI
 
 struct MainAppView: View {
     // Define the categories in the desired order
     let categories = ["Pastelerías", "Comida Rápida", "Restaurantes", "Cafeterías"]
     
+    @StateObject private var viewModel = ComercioViewModel() // Use the ViewModel to manage commerces
+    
     var body: some View {
         ZStack {
-            // Recuerda, .leading ayuda a poner izq.
             VStack(alignment: .leading, spacing: 16) {
                 // Parte superior
                 Text("Dirección")
@@ -23,26 +16,24 @@ struct MainAppView: View {
                     .padding(.top)
                 
                 HStack(spacing: 8) {
-                  Image(systemName: "location.fill")
-                      .foregroundColor(.blue)
-                      .font(.headline)
-                  Text("Cerca de ti")
-                      .font(.headline)
-                      .foregroundColor(.gray)
+                    Image(systemName: "location.fill")
+                        .foregroundColor(.blue)
+                        .font(.headline)
+                    Text("Cerca de ti")
+                        .font(.headline)
+                        .foregroundColor(.gray)
                 }
                 
-                //Aquî van los restaurantes más cercanos:
+                // Aquí van los restaurantes más cercanos:
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 12) {
-                        ForEach(0..<6) { index in
-                            RestaurantView(
-                                category: "Cerca de ti"
-                            )
+                        ForEach(viewModel.comercios.prefix(6)) { comercio in
+                            RestaurantView(comercio: comercio)
                         }
                     }
                 }
                 
-                // Aquî van las categorîas
+                // Aquí van las categorías
                 ScrollView(.vertical, showsIndicators: false) {
                     VStack(alignment: .leading, spacing: 20) {
                         ForEach(categories, id: \.self) { category in
@@ -53,8 +44,9 @@ struct MainAppView: View {
                                 
                                 ScrollView(.horizontal, showsIndicators: false) {
                                     HStack(spacing: 12) {
-                                        ForEach(0..<6) { _ in
-                                            RestaurantView(category: category)
+                                        // Fetch commerces for each category (tipoComida)
+                                        ForEach(viewModel.comerciosForCategory(category).prefix(6)) { comercio in
+                                            RestaurantView(comercio: comercio)
                                         }
                                     }
                                 }
@@ -66,11 +58,14 @@ struct MainAppView: View {
             }
             .padding()
         }
+        .onAppear {
+            viewModel.loadComercios() // Load commerces when the view appears
+        }
     }
 }
 
 struct RestaurantView: View {
-    let category: String // Add category to customize each restaurant
+    let comercio: ComercioData
     
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -78,7 +73,7 @@ struct RestaurantView: View {
                 .fill(Color.gray.opacity(0.2))
                 .frame(width: 150, height: 100)
                 .background(
-                    Image("restaurant-placeholder")
+                    Image("restaurant-placeholder") // Placeholder image
                         .resizable()
                         .scaledToFill()
                         .frame(width: 150, height: 100)
@@ -86,15 +81,27 @@ struct RestaurantView: View {
                         .cornerRadius(10)
                 )
             
-            Text("Restaurante") // Display category for demo
+            Text(comercio.nombre) // Display the name of the restaurant
                 .font(.headline)
             
             // Rating Stars
             HStack(spacing: 2) {
                 ForEach(0..<5) { index in
-                    Image(systemName: index < 3 ? "star.fill" : "star")
+                    Image(systemName: index < Int(comercio.calificacionPromedio) ? "star.fill" : "star")
                         .foregroundColor(.yellow)
                         .font(.system(size: 12))
+                }
+            }
+            
+            // Business Hours (Display the schedule)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Horario:")
+                    .font(.caption)
+                    .foregroundColor(.gray)
+                ForEach(comercio.horario.keys.sorted(), id: \.self) { day in
+                    Text("\(day): \(comercio.horario[day] ?? "Cerrado")")
+                        .font(.caption)
+                        .foregroundColor(.gray)
                 }
             }
             
@@ -103,6 +110,7 @@ struct RestaurantView: View {
                 .font(.caption)
                 .foregroundColor(.gray)
         }
+        .navigationBarBackButtonHidden(true)
     }
 }
 
@@ -111,7 +119,3 @@ struct MainAppView_Previews: PreviewProvider {
         MainAppView()
     }
 }
-// Pasteleria
-// Comida Rápida
-// Restaurantes
-// Cafeterîas

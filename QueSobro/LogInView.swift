@@ -16,6 +16,10 @@ struct LoginView: View {
     @State private var showAlert = false
     @State private var errorMessage = ""
     @State private var isAuthenticated = false
+    @State private var navigateToStore = false
+    @State private var navigateToMain = false
+    @State private var userType = ""
+    
     
     // Para la navegación
     @State private var navigateToHome = false
@@ -118,8 +122,14 @@ struct LoginView: View {
                 
                 // Navegación programática
                 NavigationLink(
-                    destination: HomeView(),
-                    isActive: $navigateToHome,
+                    destination: ComercioHomeView(isAuthenticated: $isAuthenticated),
+                    isActive: $navigateToStore,
+                    label: { EmptyView() }
+                )
+
+                NavigationLink(
+                    destination: NavBarView(),
+                    isActive: $navigateToMain,
                     label: { EmptyView() }
                 )
             }
@@ -163,8 +173,26 @@ struct LoginView: View {
                         return
                     }
                     
-                    // Navegar a la pantalla principal
-                    navigateToHome = true
+                    // Verificar el tipo de usuario
+                    if let document = document, document.exists {
+                        if let userData = document.data(),
+                           let tipo = userData["tipo"] as? String {
+                            
+                            // Navegar a la vista correspondiente según el tipo
+                            if tipo == "comercio" {
+                                self.navigateToStore = true
+                            } else {
+                                // Por defecto, asumimos que es cliente
+                                self.navigateToMain = true
+                            }
+                        } else {
+                            // Si no se puede determinar el tipo, ir a la vista principal
+                            self.navigateToMain = true
+                        }
+                    } else {
+                        // Si no existe el documento, ir a la vista principal
+                        self.navigateToMain = true
+                    }
                 }
             }
         }
@@ -174,8 +202,7 @@ struct LoginView: View {
 // Vista de marcador de posición para la pantalla principal
 struct HomeView: View {
     var body: some View {
-        Text("Pantalla Principal")
-            .font(.largeTitle)
+        MainAppView()
     }
 }
 

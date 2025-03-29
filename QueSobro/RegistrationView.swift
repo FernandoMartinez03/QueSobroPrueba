@@ -76,7 +76,6 @@ struct RegistrationView: View {
                     }
                 }
             }
-            .navigationTitle(currentStep == 1 ? "¿Qué eres?" : "Registro")
             .navigationBarBackButtonHidden(currentStep > 1)
             .navigationBarItems(leading: currentStep > 1 ? Button(action: {
                 withAnimation {
@@ -443,7 +442,7 @@ struct ComercioRegistrationView: View {
     @State private var tipoComidaSeleccionada = "Pastelería"
     
     let ciudades = ["Monterrey", "Guadalajara", "Chihuahua", "Ciudad de México"]
-    let tiposComida = ["Pastelería", "Cafetería", "Restaurante", "Comida Rápida", "Panadería", "Postres"]
+    let tiposComida = ["Pastelería", "Cafetería", "Restaurante", "Comida Rápida"]
     
     // Colores de la app
     let primaryColor = Color(red: 0.85, green: 0.16, blue: 0.08) // Rojo del logo
