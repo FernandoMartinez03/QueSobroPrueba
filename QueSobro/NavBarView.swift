@@ -17,23 +17,25 @@ struct NavBarView: View {
                     Image("queSobroLogo") // 50-50px
                 }
    
-            MainAppView() //Aqui se cambiará hacia la otra pantalla supongo
+            SearchView() //Aqui se cambiará hacia la otra pantalla supongo
                 .tabItem {
                     Image(systemName: "magnifyingglass")
                     Text("Buscar")
                 }
             
-            MainAppView()
+            MapView()
                 .tabItem {
                     Image(systemName: "map")
                     Text("Mapa")
                 }
             
-            MainAppView()
+            // Historial de pedidos
+            OrderHistoryView()
                 .tabItem {
-                    Image(systemName: "tray.full")
+                    Image(systemName: "bag.fill")
                     Text("Pedidos")
                 }
+                .tag(1)
         }
         .navigationBarBackButtonHidden(true)
     }

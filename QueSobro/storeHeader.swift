@@ -13,6 +13,7 @@ struct ComercioHeaderView: View {
     @State private var isUploading = false
     @State private var showAlert = false
     @State private var alertMessage = ""
+    @State private var navigateToPedidos = false
     
     // Colores de la app
     let primaryColor = Color(red: 0.85, green: 0.16, blue: 0.08) // Rojo del logo
@@ -120,16 +121,23 @@ struct ComercioHeaderView: View {
                 
                 Spacer()
                 
-                // Pedidos
-                VStack {
-                    Image(systemName: "bag.fill")
-                        .font(.system(size: 20))
-                        .foregroundColor(primaryColor)
-                    Text("Pedidos")
-                        .font(.caption)
-                        .foregroundColor(.gray)
+                // Pedidos - Ahora con navegación
+                NavigationLink(destination:
+                    ComercioPedidosView(
+                        comercioID: comercioData?.id ?? "",
+                        comercioName: comercioData?.nombre ?? "Comercio"
+                    )
+                ) {
+                    VStack {
+                        Image(systemName: "bag.fill")
+                            .font(.system(size: 20))
+                            .foregroundColor(primaryColor)
+                        Text("Pedidos")
+                            .font(.caption)
+                            .foregroundColor(.gray)
+                    }
+                    .frame(width: 100)
                 }
-                .frame(width: 100)
                 
                 Spacer()
                 
@@ -326,9 +334,9 @@ struct ComercioImagePicker: UIViewControllerRepresentable {
     }
     
     class Coordinator: NSObject, UINavigationControllerDelegate, UIImagePickerControllerDelegate {
-        let parent: ComercioImagePicker  // Cambia aquí también
+        let parent: ComercioImagePicker
         
-        init(_ parent: ComercioImagePicker) {  // Y aquí
+        init(_ parent: ComercioImagePicker) {
             self.parent = parent
         }
         

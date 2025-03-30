@@ -20,10 +20,59 @@ struct RestaurantDetailView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     // Header image
+                    // Actualización para el encabezado de RestaurantDetailView
+                    // Reemplaza la sección del header image en RestaurantDetailView con este código:
+
+                    // Header image con imagen desde URL
                     ZStack(alignment: .bottom) {
-                        Rectangle()
-                            .fill(Color.gray.opacity(0.3))
-                            .frame(height: 200)
+                        if comercio.imageURL.isEmpty {
+                            // Placeholder si no hay imagen
+                            Rectangle()
+                                .fill(Color.gray.opacity(0.3))
+                                .frame(height: 200)
+                        } else {
+                            // Cargar imagen desde URL
+                            AsyncImage(url: URL(string: comercio.imageURL)) { phase in
+                                switch phase {
+                                case .empty:
+                                    // Estado de carga
+                                    Rectangle()
+                                        .fill(Color.gray.opacity(0.3))
+                                        .frame(height: 200)
+                                        .overlay(
+                                            ProgressView()
+                                                .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                                .scaleEffect(1.5)
+                                        )
+                                case .success(let image):
+                                    // Imagen cargada exitosamente
+                                    image
+                                        .resizable()
+                                        .aspectRatio(contentMode: .fill)
+                                        .frame(height: 200)
+                                        .clipped()
+                                case .failure:
+                                    // Error al cargar la imagen
+                                    Rectangle()
+                                        .fill(Color.gray.opacity(0.3))
+                                        .frame(height: 200)
+                                        .overlay(
+                                            VStack {
+                                                Image(systemName: "photo")
+                                                    .font(.system(size: 40))
+                                                    .foregroundColor(.white.opacity(0.8))
+                                                Text("No se pudo cargar la imagen")
+                                                    .foregroundColor(.white.opacity(0.8))
+                                                    .padding(.top, 8)
+                                            }
+                                        )
+                                @unknown default:
+                                    Rectangle()
+                                        .fill(Color.gray.opacity(0.3))
+                                        .frame(height: 200)
+                                }
+                            }
+                        }
                         
                         // Overlay with restaurant name
                         VStack(alignment: .leading) {
@@ -38,6 +87,9 @@ struct RestaurantDetailView: View {
                                 Text("\(String(format: "%.1f", comercio.calificacionPromedio))")
                                     .fontWeight(.semibold)
                                     .foregroundColor(.white)
+                                Text("(\(comercio.reviewsCount) reseñas)")
+                                    .foregroundColor(.white.opacity(0.8))
+                                    .font(.footnote)
                             }
                         }
                         .padding(.horizontal, 16)
@@ -150,7 +202,7 @@ struct RestaurantDetailView: View {
                                 .padding(.vertical, 20)
                             } else if !isLoading {
                                 ForEach(productos) { producto in
-                                    ProductCardView(producto: producto)
+                                    ProductCardView(producto: producto, comercioID: comercioID)
                                 }
                             }
                         }
@@ -213,15 +265,22 @@ struct RestaurantDetailView: View {
 }
 
 // Product card view
+import SwiftUI
+
+// Vista de tarjeta de producto con botón para compra simulada
 struct ProductCardView: View {
     let producto: Producto
+    let comercioID: String
+    
+    @State private var showPurchaseSheet = false
     
     let primaryColor = Color(red: 0.85, green: 0.16, blue: 0.08)
     
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
+            // Contenido principal: imagen y detalles
             HStack(alignment: .top, spacing: 12) {
-                // Product image
+                // Imagen del producto
                 if producto.imageURL.isEmpty {
                     Rectangle()
                         .fill(Color.gray.opacity(0.2))
@@ -254,7 +313,7 @@ struct ProductCardView: View {
                     }
                 }
                 
-                // Product info
+                // Información del producto
                 VStack(alignment: .leading, spacing: 4) {
                     Text(producto.nombre)
                         .font(.headline)
@@ -265,7 +324,7 @@ struct ProductCardView: View {
                         .foregroundColor(.gray)
                         .lineLimit(2)
                     
-                    // Price info
+                    // Precios
                     HStack {
                         Text("$\(String(format: "%.2f", producto.precio))")
                             .font(.subheadline)
@@ -286,7 +345,7 @@ struct ProductCardView: View {
                             .cornerRadius(3)
                     }
                     
-                    // Tags
+                    // Etiquetas
                     if !producto.etiquetas.isEmpty {
                         HStack {
                             ForEach(producto.etiquetas.prefix(2), id: \.self) { tag in
@@ -304,23 +363,23 @@ struct ProductCardView: View {
                 .padding(.leading, 4)
             }
             
-            // Availability time
+            // Disponibilidad de tiempo
             VStack(alignment: .leading, spacing: 4) {
                 Text("Disponible hasta:")
                     .font(.caption)
                     .foregroundColor(.gray)
                 
                 HStack {
-                    // Time progress bar
+                    // Barra de progreso
                     GeometryReader { geometry in
                         ZStack(alignment: .leading) {
-                            // Background
+                            // Fondo
                             Rectangle()
                                 .fill(Color.gray.opacity(0.2))
                                 .frame(height: 6)
                                 .cornerRadius(3)
                             
-                            // Progress
+                            // Progreso
                             Rectangle()
                                 .fill(timeRemainingColor(for: producto))
                                 .frame(
@@ -332,16 +391,78 @@ struct ProductCardView: View {
                     }
                     .frame(height: 6)
                     
+                    // Texto de tiempo restante
                     Text(formatTimeRemaining(for: producto))
                         .font(.caption)
                         .foregroundColor(timeRemainingColor(for: producto))
                 }
             }
             
+            // Botón de comprar
+            Button(action: {
+                showPurchaseSheet = true
+            }) {
+                HStack {
+                    Spacer()
+                    
+                    Text("Comprar ahora")
+                        .font(.subheadline)
+                        .fontWeight(.bold)
+                        .foregroundColor(.white)
+                    
+                    Spacer()
+                }
+                .padding(.vertical, 10)
+                .background(producto.cantidadDisponible > 0 ? primaryColor : Color.gray)
+                .cornerRadius(10)
+            }
+            .disabled(producto.cantidadDisponible < 1)
+            .sheet(isPresented: $showPurchaseSheet) {
+                // Mostrar vista de compra con pago simulado
+                ProductPurchaseView(
+                    producto: producto,
+                    isPresented: $showPurchaseSheet
+                )
+            }
+            
             Divider()
         }
         .padding(.vertical, 8)
     }
+    
+    // Función auxiliar para obtener el color según el tiempo restante
+    private func timeRemainingColor(for producto: Producto) -> Color {
+        if producto.tiempoRestantePorcentaje > 0.6 {
+            return .green
+        } else if producto.tiempoRestantePorcentaje > 0.3 {
+            return .orange
+        } else {
+            return .red
+        }
+    }
+    
+    // Función auxiliar para formatear el tiempo restante
+    private func formatTimeRemaining(for producto: Producto) -> String {
+        let ahora = Date()
+        let segundosRestantes = producto.venceEn.timeIntervalSince(ahora)
+        
+        if segundosRestantes <= 0 {
+            return "Expirado"
+        }
+        
+        let horasRestantes = Int(segundosRestantes / 3600)
+        let minutosRestantes = Int((segundosRestantes.truncatingRemainder(dividingBy: 3600)) / 60)
+        
+        if horasRestantes > 24 {
+            let diasRestantes = horasRestantes / 24
+            return "\(diasRestantes) día\(diasRestantes > 1 ? "s" : "")"
+        } else if horasRestantes > 0 {
+            return "\(horasRestantes)h \(minutosRestantes)m"
+        } else {
+            return "\(minutosRestantes) minutos"
+        }
+    }
+}
     
     // Helper for time remaining color
     private func timeRemainingColor(for producto: Producto) -> Color {
@@ -375,4 +496,4 @@ struct ProductCardView: View {
             return "\(minutosRestantes) minutos"
         }
     }
-}
+

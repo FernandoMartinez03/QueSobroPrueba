@@ -140,6 +140,7 @@ struct CategorySection: View {
 }
 
 // Restaurant view con estilo mejorado
+// Restaurant view con imagen desde Firebase
 struct RestaurantView: View {
     let comercio: ComercioData
     let comercioID: String
@@ -152,17 +153,60 @@ struct RestaurantView: View {
     var body: some View {
         NavigationLink(destination: RestaurantDetailView(comercio: comercio, comercioID: comercioID)) {
             VStack(alignment: .leading, spacing: 6) {
-                // Imagen del restaurante
+                // Imagen del restaurante desde URL
                 ZStack(alignment: .topTrailing) {
-                    Rectangle()
-                        .fill(Color.gray.opacity(0.3))
-                        .frame(width: 150, height: 100)
-                        .cornerRadius(12)
-                        .overlay(
-                            Image(systemName: "photo")
-                                .font(.system(size: 24))
-                                .foregroundColor(.white.opacity(0.8))
-                        )
+                    if comercio.imageURL.isEmpty {
+                        // Placeholder si no hay imagen
+                        Rectangle()
+                            .fill(Color.gray.opacity(0.3))
+                            .frame(width: 150, height: 100)
+                            .cornerRadius(12)
+                            .overlay(
+                                Image(systemName: "photo")
+                                    .font(.system(size: 24))
+                                    .foregroundColor(.white.opacity(0.8))
+                            )
+                    } else {
+                        // Cargar imagen desde URL
+                        AsyncImage(url: URL(string: comercio.imageURL)) { phase in
+                            switch phase {
+                            case .empty:
+                                // Estado de carga
+                                Rectangle()
+                                    .fill(Color.gray.opacity(0.2))
+                                    .frame(width: 150, height: 100)
+                                    .cornerRadius(12)
+                                    .overlay(
+                                        ProgressView()
+                                            .progressViewStyle(CircularProgressViewStyle())
+                                            .scaleEffect(0.7)
+                                    )
+                            case .success(let image):
+                                // Imagen cargada exitosamente
+                                image
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fill)
+                                    .frame(width: 150, height: 100)
+                                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                            case .failure:
+                                // Error al cargar la imagen
+                                Rectangle()
+                                    .fill(Color.gray.opacity(0.3))
+                                    .frame(width: 150, height: 100)
+                                    .cornerRadius(12)
+                                    .overlay(
+                                        Image(systemName: "photo")
+                                            .font(.system(size: 24))
+                                            .foregroundColor(.white.opacity(0.8))
+                                    )
+                            @unknown default:
+                                Rectangle()
+                                    .fill(Color.gray.opacity(0.3))
+                                    .frame(width: 150, height: 100)
+                                    .cornerRadius(12)
+                            }
+                        }
+                    }
                     
                     // Etiqueta de categoría principal
                     if let firstCategory = comercio.tipoComida.first {
@@ -207,6 +251,11 @@ struct RestaurantView: View {
                                 .font(.caption)
                                 .foregroundColor(.primary)
                         }
+                        
+                        // Mostrar el número de reseñas
+                        Text("(\(comercio.reviewsCount))")
+                            .font(.caption)
+                            .foregroundColor(.gray)
                         
                         // Horario si está disponible
                         if let horaHoy = obtenerHorarioHoy(comercio.horario) {

@@ -133,7 +133,7 @@ struct Step1View: View {
     var body: some View {
         VStack(spacing: 30) {
             // Logo
-            Image("queSobroLogo")
+            Image("logoHD")
                 .resizable()
                 .aspectRatio(contentMode: .fit)
                 .frame(width: 120, height: 120)

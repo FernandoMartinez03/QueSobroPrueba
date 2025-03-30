@@ -38,7 +38,7 @@ struct LoginView: View {
                     Spacer()
                     
                     // Logo
-                    Image("queSobroLogo")
+                    Image("logoHD")
                         .resizable()
                         .aspectRatio(contentMode: .fit)
                         .frame(width: 160, height: 160)
