@@ -2,120 +2,261 @@ import SwiftUI
 
 struct MainAppView: View {
     // Define the categories in the desired order
-    let categories = ["Pastelerías", "Comida Rápida", "Restaurantes", "Cafeterías"]
+    let categories = ["Pastelería", "Comida Rápida", "Restaurantes", "Cafeterías"]
     
     @StateObject private var viewModel = ComercioViewModel() // Use the ViewModel to manage commerces
     
+    // Colores de la app
+    let primaryColor = Color(red: 0.85, green: 0.16, blue: 0.08) // Rojo del logo
+    let backgroundColor = Color(white: 0.97)
+    let accentColor = Color.blue
+    
     var body: some View {
-        ZStack {
-            VStack(alignment: .leading, spacing: 16) {
-                // Parte superior
-                Text("Dirección")
-                    .font(.title) // Tîtulo es + grande!.
-                    .fontWeight(.bold)
-                    .padding(.top)
+        NavigationView {
+            ZStack {
+                backgroundColor.edgesIgnoringSafeArea(.all)
                 
-                HStack(spacing: 8) {
-                    Image(systemName: "location.fill")
-                        .foregroundColor(.blue)
-                        .font(.headline)
-                    Text("Cerca de ti")
-                        .font(.headline)
-                        .foregroundColor(.gray)
-                }
-                
-                // Aquí van los restaurantes más cercanos:
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 12) {
-                        ForEach(viewModel.comercios.prefix(6)) { comercio in
-                            RestaurantView(comercio: comercio)
-                        }
-                    }
-                }
-                
-                // Aquí van las categorías
-                ScrollView(.vertical, showsIndicators: false) {
+                ScrollView {
                     VStack(alignment: .leading, spacing: 20) {
-                        ForEach(categories, id: \.self) { category in
-                            VStack(alignment: .leading, spacing: 8) {
-                                Text(category)
+                        // Parte superior
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("¡Bienvenido a QueSobro!")
+                                .font(.title)
+                                .fontWeight(.bold)
+                                .foregroundColor(.primary)
+                            
+                            HStack(spacing: 8) {
+                                Image(systemName: "location.fill")
+                                    .foregroundColor(accentColor)
                                     .font(.headline)
-                                    .fontWeight(.semibold)
+                                Text("Cerca de ti")
+                                    .font(.headline)
+                                    .foregroundColor(.gray)
+                            }
+                        }
+                        .padding(.top, 8)
+                        
+                        // Comercios destacados
+                        VStack(alignment: .leading, spacing: 12) {
+                            HStack {
+                                Text("Destacados")
+                                    .font(.title2)
+                                    .fontWeight(.bold)
+                                    .foregroundColor(primaryColor)
                                 
-                                ScrollView(.horizontal, showsIndicators: false) {
-                                    HStack(spacing: 12) {
-                                        // Fetch commerces for each category (tipoComida)
-                                        ForEach(viewModel.comerciosForCategory(category).prefix(6)) { comercio in
-                                            RestaurantView(comercio: comercio)
-                                        }
+                                Spacer()
+                                
+                                Button(action: {
+                                    // Action to view all
+                                }) {
+                                    Text("Ver todos")
+                                        .font(.subheadline)
+                                        .foregroundColor(primaryColor)
+                                }
+                            }
+                            
+                            // Scrollable row of featured restaurants
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(spacing: 16) {
+                                    ForEach(viewModel.comercios.prefix(5)) { comercio in
+                                        RestaurantView(comercio: comercio, comercioID: comercio.id)
                                     }
                                 }
+                                .padding(.vertical, 4)
+                            }
+                        }
+                        
+                        // Categorías
+                        VStack(alignment: .leading, spacing: 20) {
+                            Text("Explora por categorías")
+                                .font(.title2)
+                                .fontWeight(.bold)
+                                .foregroundColor(primaryColor)
+                            
+                            ForEach(categories, id: \.self) { category in
+                                CategorySection(
+                                    categoryName: category,
+                                    comercios: viewModel.comerciosForCategory(category),
+                                    primaryColor: primaryColor
+                                )
                             }
                         }
                     }
+                    .padding(.horizontal)
+                    .padding(.bottom, 20)
                 }
-                Spacer() // Pushes content up
             }
-            .padding()
-        }
-        .onAppear {
-            viewModel.loadComercios() // Load commerces when the view appears
+            .navigationBarHidden(true)
         }
     }
 }
 
-struct RestaurantView: View {
-    let comercio: ComercioData
+// Sección de categoría
+struct CategorySection: View {
+    let categoryName: String
+    let comercios: [ComercioData]
+    let primaryColor: Color
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            RoundedRectangle(cornerRadius: 10)
-                .fill(Color.gray.opacity(0.2))
-                .frame(width: 150, height: 100)
-                .background(
-                    Image("restaurant-placeholder") // Placeholder image
-                        .resizable()
-                        .scaledToFill()
-                        .frame(width: 150, height: 100)
-                        .clipped()
-                        .cornerRadius(10)
-                )
-            
-            Text(comercio.nombre) // Display the name of the restaurant
-                .font(.headline)
-            
-            // Rating Stars
-            HStack(spacing: 2) {
-                ForEach(0..<5) { index in
-                    Image(systemName: index < Int(comercio.calificacionPromedio) ? "star.fill" : "star")
-                        .foregroundColor(.yellow)
-                        .font(.system(size: 12))
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text(categoryName)
+                    .font(.headline)
+                    .fontWeight(.semibold)
+                
+                Spacer()
+                
+                if comercios.count > 3 {
+                    Button(action: {
+                        // Action to view all in this category
+                    }) {
+                        Text("Ver más")
+                            .font(.caption)
+                            .foregroundColor(primaryColor)
+                    }
                 }
             }
             
-            // Business Hours (Display the schedule)
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Horario:")
-                    .font(.caption)
+            if comercios.isEmpty {
+                Text("No hay comercios en esta categoría")
+                    .font(.subheadline)
                     .foregroundColor(.gray)
-                ForEach(comercio.horario.keys.sorted(), id: \.self) { day in
-                    Text("\(day): \(comercio.horario[day] ?? "Cerrado")")
-                        .font(.caption)
-                        .foregroundColor(.gray)
+                    .padding(.vertical, 10)
+            } else {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 16) {
+                        ForEach(comercios) { comercio in
+                            RestaurantView(comercio: comercio, comercioID: comercio.id)
+                        }
+                    }
+                    .padding(.vertical, 4)
                 }
             }
             
-            // Distance (static for now)
-            Text("2.5 km")
-                .font(.caption)
-                .foregroundColor(.gray)
+            Divider()
+                .padding(.top, 4)
         }
-        .navigationBarBackButtonHidden(true)
     }
 }
 
+// Restaurant view con estilo mejorado
+struct RestaurantView: View {
+    let comercio: ComercioData
+    let comercioID: String
+    
+    // Color scheme
+    let primaryColor = Color(red: 0.85, green: 0.16, blue: 0.08)
+    let backgroundColor = Color.white
+    let shadowColor = Color.black.opacity(0.1)
+    
+    var body: some View {
+        NavigationLink(destination: RestaurantDetailView(comercio: comercio, comercioID: comercioID)) {
+            VStack(alignment: .leading, spacing: 6) {
+                // Imagen del restaurante
+                ZStack(alignment: .topTrailing) {
+                    Rectangle()
+                        .fill(Color.gray.opacity(0.3))
+                        .frame(width: 150, height: 100)
+                        .cornerRadius(12)
+                        .overlay(
+                            Image(systemName: "photo")
+                                .font(.system(size: 24))
+                                .foregroundColor(.white.opacity(0.8))
+                        )
+                    
+                    // Etiqueta de categoría principal
+                    if let firstCategory = comercio.tipoComida.first {
+                        Text(firstCategory)
+                            .font(.caption2)
+                            .fontWeight(.medium)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(primaryColor)
+                            .foregroundColor(.white)
+                            .cornerRadius(8)
+                            .padding(8)
+                    }
+                }
+                
+                // Información del restaurante
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(comercio.nombre)
+                        .font(.subheadline)
+                        .fontWeight(.bold)
+                        .foregroundColor(.primary)
+                        .lineLimit(1)
+                    
+                    HStack(spacing: 4) {
+                        Image(systemName: "location.fill")
+                            .font(.system(size: 10))
+                            .foregroundColor(.gray)
+                        
+                        Text(comercio.direccion)
+                            .font(.caption)
+                            .foregroundColor(.gray)
+                            .lineLimit(1)
+                    }
+                    
+                    HStack(spacing: 4) {
+                        HStack(spacing: 2) {
+                            Image(systemName: "star.fill")
+                                .foregroundColor(.yellow)
+                                .font(.system(size: 10))
+                            
+                            Text(String(format: "%.1f", comercio.calificacionPromedio))
+                                .font(.caption)
+                                .foregroundColor(.primary)
+                        }
+                        
+                        // Horario si está disponible
+                        if let horaHoy = obtenerHorarioHoy(comercio.horario) {
+                            Text("•")
+                                .font(.caption)
+                                .foregroundColor(.gray)
+                            
+                            Text(horaHoy)
+                                .font(.caption)
+                                .foregroundColor(.primary)
+                        }
+                    }
+                }
+                .padding(.horizontal, 8)
+                .padding(.bottom, 8)
+            }
+            .frame(width: 150)
+            .background(backgroundColor)
+            .cornerRadius(12)
+            .shadow(color: shadowColor, radius: 5, x: 0, y: 2)
+        }
+        .buttonStyle(PlainButtonStyle()) // Para evitar efectos visuales no deseados
+    }
+    
+    // Helper para obtener el horario del día actual
+    private func obtenerHorarioHoy(_ horario: [String: String]) -> String? {
+        let diasSemana = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"]
+        let calendar = Calendar.current
+        let diaActual = calendar.component(.weekday, from: Date()) - 1 // 0 es domingo
+        
+        if diaActual >= 0 && diaActual < diasSemana.count {
+            return horario[diasSemana[diaActual]]
+        }
+        
+        return nil
+    }
+}
+
+// Vista previa
 struct MainAppView_Previews: PreviewProvider {
     static var previews: some View {
         MainAppView()
+    }
+}
+
+// Extension del ViewModel (incluida para completitud)
+extension ComercioViewModel {
+    func comerciosForCategory(_ category: String) -> [ComercioData] {
+        return comercios.filter { comercio in
+            comercio.tipoComida.contains(category)
+        }
     }
 }

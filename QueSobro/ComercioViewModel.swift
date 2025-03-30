@@ -1,6 +1,19 @@
 import FirebaseFirestore
 import SwiftUI
 
+// Definición de la estructura ComercioData
+struct ComercioData: Identifiable {
+    var id: String
+    var nombre: String
+    var direccion: String
+    var ciudad: String
+    var calificacionPromedio: Double
+    var tipoComida: [String]
+    var horario: [String: String]
+    var imageURL: String
+    var reviewsCount: Int
+}
+
 class ComercioViewModel: ObservableObject {
     @Published var comercios: [ComercioData] = []
     
@@ -8,13 +21,13 @@ class ComercioViewModel: ObservableObject {
         loadComercios()
     }
     
-    // Load commerces from Firestore
+    // Load comercios from Firestore
     func loadComercios() {
         let db = Firestore.firestore()
         
         db.collection("comercios").getDocuments { snapshot, error in
             if let error = error {
-                print("Error fetching commerces: \(error.localizedDescription)")
+                print("Error fetching comercios: \(error.localizedDescription)")
                 return
             }
             
@@ -23,12 +36,15 @@ class ComercioViewModel: ObservableObject {
             for document in snapshot?.documents ?? [] {
                 let data = document.data()
                 let id = document.documentID
+                
                 let nombre = data["nombre"] as? String ?? ""
                 let direccion = data["direccion"] as? String ?? ""
                 let ciudad = data["ciudad"] as? String ?? ""
                 let calificacionPromedio = data["calificacionPromedio"] as? Double ?? 0.0
                 let tipoComida = data["tipoComida"] as? [String] ?? []
-                let horario = data["horario"] as? [String: String] ?? [:] // Map business hours
+                let horario = data["horario"] as? [String: String] ?? [:]
+                let imageURL = data["imageURL"] as? String ?? ""
+                let reviewsCount = data["reviewsCount"] as? Int ?? 0
                 
                 let comercio = ComercioData(
                     id: id,
@@ -37,7 +53,9 @@ class ComercioViewModel: ObservableObject {
                     ciudad: ciudad,
                     calificacionPromedio: calificacionPromedio,
                     tipoComida: tipoComida,
-                    horario: horario
+                    horario: horario,
+                    imageURL: imageURL,
+                    reviewsCount: reviewsCount
                 )
                 
                 comerciosArray.append(comercio)
@@ -46,10 +64,6 @@ class ComercioViewModel: ObservableObject {
             self.comercios = comerciosArray
         }
     }
-    
-    // Filter commerces by category
-    func comerciosForCategory(_ category: String) -> [ComercioData] {
-        return comercios.filter { $0.tipoComida.contains(category) } // Filter by food type
-    }
 }
+
 

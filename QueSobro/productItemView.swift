@@ -9,7 +9,10 @@ import SwiftUI
 
 struct ProductoItemView: View {
     let producto: Producto
+    let comercioID: String
     let onDelete: () -> Void
+    
+    @State private var showEditSheet = false
     
     // Colores de la app
     let primaryColor = Color(red: 0.85, green: 0.16, blue: 0.08) // Rojo del logo
@@ -137,7 +140,7 @@ struct ProductoItemView: View {
                 
                 // Botón de editar
                 Button(action: {
-                    // Acción de editar (pendiente de implementar)
+                    showEditSheet = true
                 }) {
                     HStack {
                         Image(systemName: "pencil")
@@ -174,6 +177,15 @@ struct ProductoItemView: View {
         .cornerRadius(15)
         .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
         .padding(.horizontal)
+        .sheet(isPresented: $showEditSheet) {
+            // Mostrar la ventana de edición cuando se presiona el botón
+            AddProductoView(
+                comercioID: comercioID,
+                isEditMode: true,
+                productoID: producto.id,
+                productoExistente: producto
+            )
+        }
     }
     
     // Barra de progreso para el tiempo restante

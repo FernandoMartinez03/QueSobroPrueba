@@ -1,10 +1,3 @@
-//
-//  storeView.swift
-//  QueSobro
-//
-//  Created by Alumno on 29/03/25.
-//
-
 import SwiftUI
 import FirebaseFirestore
 import FirebaseAuth
@@ -25,98 +18,138 @@ struct ComercioHomeView: View {
     let backgroundColor = Color(white: 0.97)
     
     var body: some View {
+        contentView
+            .navigationBarBackButtonHidden(true)
+    }
+    
+    // Extraer el contenido principal a una propiedad computada
+    private var contentView: some View {
         NavigationView {
             ZStack {
                 backgroundColor.edgesIgnoringSafeArea(.all)
                 
                 if isLoading {
-                    ProgressView()
-                        .progressViewStyle(CircularProgressViewStyle(tint: primaryColor))
-                        .scaleEffect(1.5)
+                    loadingView
                 } else {
-                    ScrollView {
-                        VStack(spacing: 20) {
-                            // Header con información del comercio
-                            ComercioHeaderView(comercioData: comercioData)
-                            
-                            // Sección de productos disponibles
-                            VStack(alignment: .leading, spacing: 15) {
-                                HStack {
-                                    Text("Paquetes Disponibles")
-                                        .font(.title2)
-                                        .fontWeight(.bold)
-                                        .foregroundColor(primaryColor)
-                                    
-                                    Spacer()
-                                    
-                                    // Botón para agregar nuevo producto
-                                    Button(action: {
-                                        showAddProduct = true
-                                    }) {
-                                        HStack {
-                                            Image(systemName: "plus.circle.fill")
-                                                .foregroundColor(.white)
-                                            Text("Nuevo")
-                                                .foregroundColor(.white)
-                                        }
-                                        .padding(.horizontal, 15)
-                                        .padding(.vertical, 8)
-                                        .background(primaryColor)
-                                        .cornerRadius(20)
-                                    }
-                                }
-                                .padding(.horizontal)
-                                
-                                if productos.isEmpty {
-                                    // Mensaje cuando no hay productos
-                                    EmptyProductsView()
-                                } else {
-                                    // Lista de productos
-                                    ForEach(productos) { producto in
-                                        ProductoItemView(
-                                            producto: producto,
-                                            onDelete: {
-                                                eliminarProducto(producto)
-                                            }
-                                        )
-                                    }
-                                }
-                            }
-                            
-                            // Sección informativa
-                            InfoSectionView()
-                            
-                            Spacer()
-                        }
-                        .padding(.vertical)
-                    }
+                    mainContentView
                 }
             }
             .navigationTitle("Mi Comercio")
-            .navigationBarItems(trailing: Button(action: {
-                logout()
-            }) {
-                Image(systemName: "rectangle.portrait.and.arrow.right")
-                    .foregroundColor(primaryColor)
-            })
-            .sheet(isPresented: $showAddProduct) {
-                // Recargar productos cuando se cierra la vista
+            .navigationBarItems(trailing: logoutButton)
+            .sheet(isPresented: $showAddProduct, onDismiss: {
                 loadProductos()
-            } content: {
+            }) {
                 if let comercioID = comercioData?.id {
                     AddProductoView(comercioID: comercioID)
                 }
             }
             .alert(isPresented: $showAlert) {
-                Alert(title: Text("Aviso"), message: Text(alertMessage), dismissButton: .default(Text("OK")))
+                Alert(
+                    title: Text("Aviso"),
+                    message: Text(alertMessage),
+                    dismissButton: .default(Text("OK"))
+                )
             }
             .onAppear {
                 loadComercioData()
             }
-        }.navigationBarBackButtonHidden(true)
-    } 
+        }
+    }
     
-    // Cargar los datos del comercio
+    // Vista de carga
+    private var loadingView: some View {
+        ProgressView()
+            .progressViewStyle(CircularProgressViewStyle(tint: primaryColor))
+            .scaleEffect(1.5)
+    }
+    
+    // Contenido principal de la vista
+    private var mainContentView: some View {
+        ScrollView {
+            VStack(spacing: 20) {
+                // Header con información del comercio
+                ComercioHeaderView(comercioData: comercioData)
+                
+                // Sección de productos
+                productosSection
+                
+                // Sección informativa
+                //InfoSectionView()
+                
+                Spacer()
+            }
+            .padding(.vertical)
+        }
+    }
+    
+    // Sección de productos disponibles
+    private var productosSection: some View {
+        VStack(alignment: .leading, spacing: 15) {
+            HStack {
+                Text("Paquetes Disponibles")
+                    .font(.title2)
+                    .fontWeight(.bold)
+                    .foregroundColor(primaryColor)
+                
+                Spacer()
+                
+                // Botón para agregar nuevo producto
+                addProductButton
+            }
+            .padding(.horizontal)
+            
+            // Lista de productos o mensaje vacío
+            productsListView
+        }
+    }
+    
+    // Botón para agregar productos
+    private var addProductButton: some View {
+        Button(action: {
+            showAddProduct = true
+        }) {
+            HStack {
+                Image(systemName: "plus.circle.fill")
+                    .foregroundColor(.white)
+                Text("Nuevo")
+                    .foregroundColor(.white)
+            }
+            .padding(.horizontal, 15)
+            .padding(.vertical, 8)
+            .background(primaryColor)
+            .cornerRadius(20)
+        }
+    }
+    
+    // Lista de productos o mensaje vacío
+    private var productsListView: some View {
+        Group {
+            if productos.isEmpty {
+                EmptyProductsView()
+            } else {
+                ForEach(productos) { producto in
+                    ProductoItemView(
+                        producto: producto,
+                        comercioID: comercioData?.id ?? "", // Añadir el ID del comercio
+                        onDelete: {
+                            eliminarProducto(producto)
+                        }
+                    )
+                }
+            }
+        }
+    }
+    
+    // Botón para cerrar sesión
+    private var logoutButton: some View {
+        Button(action: {
+            logout()
+        }) {
+            Image(systemName: "rectangle.portrait.and.arrow.right")
+                .foregroundColor(primaryColor)
+        }
+    }
+    
     func loadComercioData() {
         isLoading = true
         
@@ -169,6 +202,8 @@ struct ComercioHomeView: View {
                 let calificacionPromedio = data["calificacionPromedio"] as? Double ?? 0.0
                 let tipoComida = data["tipoComida"] as? [String] ?? []
                 let horario = data["horario"] as? [String: String] ?? [:]
+                let imageURL = data["imageURL"] as? String ?? ""  // Añadido para obtener la URL de la imagen
+                let reviewsCount = data["reviewsCount"] as? Int ?? 87  // Añadido para obtener el contador de reseñas
                 
                 self.comercioData = ComercioData(
                     id: id,
@@ -177,7 +212,9 @@ struct ComercioHomeView: View {
                     ciudad: ciudad,
                     calificacionPromedio: calificacionPromedio,
                     tipoComida: tipoComida,
-                    horario: horario
+                    horario: horario,
+                    imageURL: imageURL,  // Pasar la URL de la imagen
+                    reviewsCount: reviewsCount  // Pasar el contador de reseñas
                 )
                 
                 // Cargar los productos
@@ -231,7 +268,8 @@ struct ComercioHomeView: View {
                         imageURL: imageURL,
                         etiquetas: etiquetas,
                         fechaDisponible: fechaDisponible,
-                        venceEn: venceEn
+                        venceEn: venceEn,
+                        comercioID: comercioID  // Añadir el ID del comercio
                     )
                     
                     nuevosProductos.append(producto)
@@ -299,6 +337,33 @@ struct EmptyProductsView: View {
     }
 }
 
+struct InfoSectionView: View {
+    // Colores de la app
+    let primaryColor = Color(red: 0.85, green: 0.16, blue: 0.08) // Rojo del logo
+    
+    var body: some View {
+        VStack(spacing: 10) {
+            Text("¡Combate el desperdicio alimentario!")
+                .font(.headline)
+                .foregroundColor(primaryColor)
+            
+            Text("Cada año se desperdician más de 1.000 millones de toneladas de alimentos a nivel mundial. Con Qué Sobró, estás contribuyendo a reducir este impacto.")
+                .font(.caption)
+                .foregroundColor(.gray)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal)
+            
+            Text("ODS 12: Producción y consumo responsables")
+                .font(.caption2)
+                .foregroundColor(.gray)
+        }
+        .padding()
+        .background(Color.white)
+        .cornerRadius(15)
+        .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
+        .padding(.horizontal)
+    }
+}
 // Vista previa
 struct ComercioHomeView_Previews: PreviewProvider {
     static var previews: some View {

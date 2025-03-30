@@ -604,6 +604,7 @@ struct ComercioRegistrationView: View {
             }
             .padding(.vertical)
         }
+        .navigationBarBackButtonHidden(true)
     }
     
     func registerComercio(ciudad: String, tipoComida: String) {
